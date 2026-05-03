@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -85,27 +86,87 @@ public class EventServiceImpl implements EventService {
     // Custom methods
     @Override
     public List<Event> getEventsByTag(String tag) {
-        return List.of();
+        if (tag == null || tag.trim().isEmpty()) {
+            throw new IllegalArgumentException("Tag cannot be null or blank");
+        }
+
+        List<Event> all = eventRepository.findAll();
+        if (all == null || all.isEmpty()) {
+            return List.of();
+        }
+
+        String normalizedTag = tag.trim().toLowerCase();
+
+        return all.stream()
+                .filter(e -> e != null && e.getTags() != null)
+                .filter(e -> e.getTags().stream()
+                        .filter(t -> t != null && !t.trim().isEmpty())
+                        .map(t -> t.trim().toLowerCase())
+                        .anyMatch(t -> t.equals(normalizedTag)))
+                .sorted(Comparator.comparing(Event::getEventDateTime,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .collect(Collectors.toList());
+
     }
 
     @Override
     public List<Event> getUpcomingEvents() {
-        return List.of();
+        List<Event> all = eventRepository.findAll();
+        if (all == null || all.isEmpty()) {
+            return List.of();
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        return all.stream()
+                .filter(e -> e != null && e.getEventDateTime() != null)
+                .filter(e -> e.getEventDateTime().isAfter(now))
+                .sorted(Comparator.comparing(Event::getEventDateTime))
+                .collect(Collectors.toList());
+
     }
 
     @Override
     public List<Event> getEventsByPriceRange(BigDecimal minPrice, BigDecimal maxPrice) {
-       return List.of();
+        // Validate range logic
+        if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
+            throw new IllegalArgumentException("min price cannot be greater than max price");
+        }
+
+        return eventRepository.findAll().stream()
+                .filter(e -> e != null && e.getTicketPrice() != null)
+                .filter(e -> (minPrice == null || e.getTicketPrice().compareTo(minPrice) >= 0))
+                .filter(e -> (maxPrice == null || e.getTicketPrice().compareTo(maxPrice) <= 0))
+                .sorted(Comparator.comparing(Event::getTicketPrice))
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<Event> getEventsByDateRange(LocalDateTime start, LocalDateTime end) {
-        return List.of();
+        if (start != null && end != null && start.isAfter(end)) {
+            throw new IllegalArgumentException("Start date cannot be after end date");
+        }
+
+        return eventRepository.findAll().stream()
+                .filter(e -> e != null && e.getEventDateTime() != null)
+                .filter(e -> (start == null || !e.getEventDateTime().isBefore(start)))
+                .filter(e -> (end == null || !e.getEventDateTime().isAfter(end)))
+                .sorted(Comparator.comparing(Event::getEventDateTime))
+                .collect(Collectors.toList());
     }
 
     @Override
     public Event updateEventPrice(UUID id, BigDecimal newPrice) {
-        return null;
+        if (id == null) throw new IllegalArgumentException("ID cannot be null");
+        if (newPrice == null || newPrice.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Price must be a positive value");
+        }
+
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Event not found with ID: " + id));
+
+        event.setTicketPrice(newPrice);
+        return eventRepository.save(event);
     }
 
 }
