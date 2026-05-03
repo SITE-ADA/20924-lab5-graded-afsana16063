@@ -112,7 +112,17 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<Event> getEventsByPriceRange(BigDecimal minPrice, BigDecimal maxPrice) {
-       return List.of();
+        // Validate range logic
+        if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
+            throw new IllegalArgumentException("min price cannot be greater than max price");
+        }
+
+        return eventRepository.findAll().stream()
+                .filter(e -> e != null && e.getTicketPrice() != null)
+                .filter(e -> (minPrice == null || e.getTicketPrice().compareTo(minPrice) >= 0))
+                .filter(e -> (maxPrice == null || e.getTicketPrice().compareTo(maxPrice) <= 0))
+                .sorted(Comparator.comparing(Event::getTicketPrice))
+                .collect(Collectors.toList());
     }
 
     @Override
