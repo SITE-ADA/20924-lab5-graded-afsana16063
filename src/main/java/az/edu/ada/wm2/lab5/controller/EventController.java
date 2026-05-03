@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -94,5 +96,39 @@ public class EventController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }
+
+    // Add EventController:getEventsByDateRange implementation
+
+    @GetMapping("/filter/date")
+    public ResponseEntity<List<Event>> filterByDateRange(
+            @RequestParam("start") String start,
+            @RequestParam("end") String end
+    ) {
+        try {
+            LocalDateTime s = LocalDateTime.parse(start);
+            LocalDateTime e = LocalDateTime.parse(end);
+
+            List<Event> result = eventService.getEventsByDateRange(s, e);
+            return new ResponseEntity<>(result, HttpStatus.OK);
+        } catch (Exception ex) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    //Add EventController:getEventsByPriceRange implementation
+    @GetMapping("/filter/price")
+    public ResponseEntity<List<Event>> filterByPriceRange(
+            @RequestParam("min") BigDecimal min,
+            @RequestParam("max") BigDecimal max
+    ) {
+        try {
+            List<Event> result = eventService.getEventsByPriceRange(min, max);
+            return new ResponseEntity<>(result, HttpStatus.OK);
+        } catch (Exception ex) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+
 
 }
