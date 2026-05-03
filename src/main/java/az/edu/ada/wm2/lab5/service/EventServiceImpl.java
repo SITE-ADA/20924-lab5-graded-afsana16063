@@ -127,7 +127,16 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<Event> getEventsByDateRange(LocalDateTime start, LocalDateTime end) {
-        return List.of();
+        if (start != null && end != null && start.isAfter(end)) {
+            throw new IllegalArgumentException("Start date cannot be after end date");
+        }
+
+        return eventRepository.findAll().stream()
+                .filter(e -> e != null && e.getEventDateTime() != null)
+                .filter(e -> (start == null || !e.getEventDateTime().isBefore(start)))
+                .filter(e -> (end == null || !e.getEventDateTime().isAfter(end)))
+                .sorted(Comparator.comparing(Event::getEventDateTime))
+                .collect(Collectors.toList());
     }
 
     @Override
