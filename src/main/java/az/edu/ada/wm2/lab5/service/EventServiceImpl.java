@@ -86,18 +86,27 @@ public class EventServiceImpl implements EventService {
     // Custom methods
     @Override
     public List<Event> getEventsByTag(String tag) {
-        if (tag == null || tag.isBlank()) {
+        if (tag == null || tag.trim().isEmpty()) {
             throw new IllegalArgumentException("Tag cannot be null or blank");
         }
+
+        List<Event> all = eventRepository.findAll();
+        if (all == null || all.isEmpty()) {
+            return List.of();
+        }
+
         String normalizedTag = tag.trim().toLowerCase();
 
-        return eventRepository.findAll().stream()
+        return all.stream()
                 .filter(e -> e != null && e.getTags() != null)
                 .filter(e -> e.getTags().stream()
-                        .filter(t -> t != null && !t.isBlank())
-                        .anyMatch(t -> t.trim().toLowerCase().equals(normalizedTag)))
-                .sorted(Comparator.comparing(Event::getEventDateTime, Comparator.nullsLast(Comparator.naturalOrder())))
+                        .filter(t -> t != null && !t.trim().isEmpty())
+                        .map(t -> t.trim().toLowerCase())
+                        .anyMatch(t -> t.equals(normalizedTag)))
+                .sorted(Comparator.comparing(Event::getEventDateTime,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
                 .collect(Collectors.toList());
+
     }
 
     @Override
