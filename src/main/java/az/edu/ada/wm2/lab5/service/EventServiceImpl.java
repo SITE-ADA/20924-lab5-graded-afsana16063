@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -85,7 +86,18 @@ public class EventServiceImpl implements EventService {
     // Custom methods
     @Override
     public List<Event> getEventsByTag(String tag) {
-        return List.of();
+        if (tag == null || tag.isBlank()) {
+            throw new IllegalArgumentException("Tag cannot be null or blank");
+        }
+        String normalizedTag = tag.trim().toLowerCase();
+
+        return eventRepository.findAll().stream()
+                .filter(e -> e != null && e.getTags() != null)
+                .filter(e -> e.getTags().stream()
+                        .filter(t -> t != null && !t.isBlank())
+                        .anyMatch(t -> t.trim().toLowerCase().equals(normalizedTag)))
+                .sorted(Comparator.comparing(Event::getEventDateTime, Comparator.nullsLast(Comparator.naturalOrder())))
+                .collect(Collectors.toList());
     }
 
     @Override
