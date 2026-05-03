@@ -130,5 +130,20 @@ public class EventController {
     }
 
 
+    // Add EventController:getEventsByTag implementation
+    @GetMapping("/filter/tag")
+    public ResponseEntity<List<Event>> filterByTag(@RequestParam("tag") String tag) {
+        try {
+            List<Event> result = eventService.getEventsByTag(tag);
+            return new ResponseEntity<>(result, HttpStatus.OK);
+        } catch (IllegalArgumentException ex) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception ex) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+
 
 }
